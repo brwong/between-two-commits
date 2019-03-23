@@ -74,7 +74,7 @@ exports.createPages = ({ actions, graphql }) =>
     const { edges } = data.allMdx
     const { createRedirect, createPage } = actions
     createPosts(createPage, createRedirect, edges)
-    createPaginatedPages(actions.createPage, edges, '/blog', {
+    createPaginatedPages(actions.createPage, edges, '', {
       categories: [],
     })
   })
@@ -105,11 +105,24 @@ const createPaginatedPages = (createPage, edges, pathPrefix, context) => {
 
   pages.forEach((page, index) => {
     const previousPagePath = `${pathPrefix}/${index + 1}`
-    const nextPagePath = index === 1 ? pathPrefix : `${pathPrefix}/${index - 1}`
+    const nextPagePath = index === 1 ? (pathPrefix || '/') : `${pathPrefix}/${index - 1}`
 
+    console.log('path!', index > 0 ? `/${index}` : `/`);
+    console.log('component!', path.resolve(`src/pages/index.js`));
+    console.log('context!', {
+        pagination: {
+          page,
+          nextPagePath: index === 0 ? null : nextPagePath,
+          previousPagePath:
+            index === pages.length - 1 ? null : previousPagePath,
+          pageCount: pages.length,
+          pathPrefix,
+        },
+        ...context,
+    });
     createPage({
-      path: index > 0 ? `${pathPrefix}/${index}` : `${pathPrefix}`,
-      component: path.resolve(`src/templates/blog.js`),
+      path: index > 0 ? `/${index}` : `/`,
+      component: path.resolve(`src/pages/index.js`),
       context: {
         pagination: {
           page,
@@ -134,7 +147,7 @@ exports.onCreateNode = ({ node, getNode, actions }) => {
 
     const slug =
       parent.sourceInstanceName === 'legacy'
-        ? `blog/${node.frontmatter.date
+        ? `${node.frontmatter.date
             .split('T')[0]
             .replace(/-/g, '/')}/${titleSlugged}`
         : node.frontmatter.slug || titleSlugged

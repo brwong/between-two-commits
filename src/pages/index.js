@@ -1,6 +1,7 @@
 import React from 'react'
 import { graphql } from 'gatsby'
 import { css } from '@emotion/core'
+import SEO from '../components/SEO'
 import styled from '@emotion/styled'
 import Layout from '../components/Layout'
 import Link from '../components/Link'
@@ -61,7 +62,25 @@ const Description = styled.p`
   display: inline-block;
 `
 
-export default function Index({ data: { site, allMdx } }) {
+export default function Index({
+  data: { site, allMdx },
+  pageContext: { pagination, categories },
+}) {
+  console.log('Index', arguments);
+  console.log('pagination', pagination);
+  const { page, nextPagePath, previousPagePath } = pagination,
+    posts = page
+    .map(id =>
+      allMdx.edges.find(
+        edge =>
+          edge.node.id === id &&
+          edge.node.parent.sourceInstanceName !== 'pages',
+      ),
+    )
+    .filter(post => post !== undefined);
+
+  console.log('posts', posts);
+
   return (
     <Layout
       site={site}
@@ -69,13 +88,14 @@ export default function Index({ data: { site, allMdx } }) {
       headerBg={theme.brand.primary}
       noSubscribeForm
     >
+      <SEO />
       <Hero />
       <Container
         css={css`
           padding-bottom: 0;
         `}
       >
-        {allMdx.edges.map(({ node: post }) => (
+        {posts.map(({ node: post }) => (
           <div
             key={post.id}
             css={css`
@@ -100,13 +120,18 @@ export default function Index({ data: { site, allMdx } }) {
             <span />
           </div>
         ))}
-        <Link
-          to="/blog"
-          aria-label="Visit blog page"
-          className="button-secondary"
-        >
-          View all articles
-        </Link>
+        <div>
+          {nextPagePath && (
+            <Link to={nextPagePath} aria-label="View next page">
+              Next Page →
+            </Link>
+          )}
+          {previousPagePath && (
+            <Link to={previousPagePath} aria-label="View previous page">
+              ← Previous Page
+            </Link>
+          )}
+        </div>
         <hr />
       </Container>
     </Layout>
@@ -122,7 +147,6 @@ export const pageQuery = graphql`
       }
     }
     allMdx(
-      limit: 5
       sort: { fields: [frontmatter___date], order: DESC }
       filter: { frontmatter: { published: { ne: false } } }
     ) {
